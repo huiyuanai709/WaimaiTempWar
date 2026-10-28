@@ -379,10 +379,10 @@ public partial class PickupShop : Node3D
         AddBag(12, new Vector3(1.85f, 1.16f, -0.7f), new Color("ded6c8"));
         AddBag(Track.Ticket, new Vector3(1.85f, 1.16f, 0.35f), new Color("e25b2a"));
         AddBag(23, new Vector3(1.85f, 1.16f, 1.45f), new Color("8d99a6"));
-        AddPerson(new Vector3(-0.4f, 0f, 1.85f), new Color("355c7d"));
-        AddPerson(new Vector3(0.55f, 0f, 1.7f), new Color("c44536"));
-        AddPerson(new Vector3(-1.3f, 0f, 0.55f), new Color("6b4c7a"));
-        AddPerson(new Vector3(0.2f, 0f, -0.35f), new Color("2f6f4e"));
+        AddCrowd(new Vector3(-0.4f, 0f, 1.85f), RiderKind.FatGuga);
+        AddCrowd(new Vector3(0.55f, 0f, 1.7f), RiderKind.ThinGuga);
+        AddCrowd(new Vector3(-1.3f, 0f, 0.55f), RiderKind.FatGuga);
+        AddCrowd(new Vector3(0.2f, 0f, -0.35f), RiderKind.ThinGuga);
     }
 
     private void AddBag(int number, Vector3 position, Color color)
@@ -407,21 +407,24 @@ public partial class PickupShop : Node3D
         _bags.Add(new CounterBag { Body = body, Number = number, Rest = ToGlobal(position) });
     }
 
-    private void AddPerson(Vector3 local, Color shirt)
+    private void AddCrowd(Vector3 local, RiderKind kind)
     {
         var person = new AnimatableBody3D
         {
+            Name = kind == RiderKind.FatGuga ? "CrowdFat" : "CrowdThin",
             SyncToPhysics = true,
             CollisionLayer = Layers.World,
             CollisionMask = 0,
             Position = local,
         };
-        MeshUtil.Box(person, new Vector3(0.46f, 1.15f, 0.36f), new Vector3(0f, 0.95f, 0f), shirt);
-        MeshUtil.Box(person, new Vector3(0.26f, 0.24f, 0.24f), new Vector3(0f, 1.68f, 0f), new Color("f0c9a0"));
+        person.AddToGroup("crowd-penguin");
+        Node3D look = RiderLooks.Build(kind, false, 0.72f);
+        look.Position = new Vector3(0f, 0f, 0f);
+        person.AddChild(look);
         person.AddChild(new CollisionShape3D
         {
-            Position = new Vector3(0f, 0.9f, 0f),
-            Shape = new BoxShape3D { Size = new Vector3(0.5f, 1.7f, 0.42f) },
+            Position = new Vector3(0f, 0.55f, 0f),
+            Shape = new BoxShape3D { Size = new Vector3(0.55f, 1.05f, 0.46f) },
         });
         AddChild(person);
         _people.Add(person);

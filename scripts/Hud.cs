@@ -61,6 +61,33 @@ public partial class Hud : CanvasLayer
         {
             Cargo()?.TryShutLid();
         }
+        else if (key.PhysicalKeycode == Key.Key1)
+        {
+            ChooseRider(RiderKind.FatGuga);
+        }
+        else if (key.PhysicalKeycode == Key.Key2)
+        {
+            ChooseRider(RiderKind.ThinGuga);
+        }
+        else if (key.PhysicalKeycode == Key.Key3)
+        {
+            ChooseRider(RiderKind.Doro);
+        }
+        else if (key.PhysicalKeycode == Key.Q)
+        {
+            RiderSkins.Cycle();
+            _toastText = $"骑手  {RiderSkins.Label(RiderSkins.Current)}";
+            _toastTime = 1.8f;
+            GetViewport().SetInputAsHandled();
+        }
+    }
+
+    private void ChooseRider(RiderKind kind)
+    {
+        RiderSkins.Select(kind);
+        _toastText = $"骑手  {RiderSkins.Label(kind)}";
+        _toastTime = 1.8f;
+        GetViewport().SetInputAsHandled();
     }
 
     public override void _Process(double delta)
@@ -113,9 +140,9 @@ public partial class Hud : CanvasLayer
 
         _hint.Text = _game.Phase switch
         {
-            DeliveryGame.RunPhase.Pickup => "W A S D 走动    E 取餐 / 上车    Tab 成就    R 重开",
-            DeliveryGame.RunPhase.Indoors => "W A S D 走动    E 电梯 / 送达    楼梯会耗体力",
-            _ => "W 油门    S / Space 刹车    A D 转向    F 拍盖    Tab 成就    R 重开",
+            DeliveryGame.RunPhase.Pickup => "W A S D 走动    E 取餐 / 上车    1 胖咕嘎  2 瘦咕嘎  3 Doro",
+            DeliveryGame.RunPhase.Indoors => "W A S D 走动    E 电梯 / 送达    1/2/3 换骑手    Q 轮换",
+            _ => "W 油门    A D 转向    1 胖咕嘎  2 瘦咕嘎  3 Doro    Q 轮换",
         };
 
         string banner = _events.Banner;

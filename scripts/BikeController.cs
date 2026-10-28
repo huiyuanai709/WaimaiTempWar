@@ -17,6 +17,7 @@ public partial class BikeController : RigidBody3D
     private MeshInstance3D? _rearWheel;
     private MeshInstance3D? _frontWheel;
     private Node3D? _model;
+    private Node3D? _rider;
     private StandardMaterial3D? _brakeLamp;
     private EventDirector? _events;
     private CargoRig? _cargo;
@@ -58,6 +59,36 @@ public partial class BikeController : RigidBody3D
         BuildBody();
         Mounted = false;
         Freeze = true;
+        RiderSkins.EnsureLoaded();
+        RiderSkins.Changed += ApplyRider;
+        ApplyRider();
+    }
+
+    public override void _ExitTree()
+    {
+        RiderSkins.Changed -= ApplyRider;
+    }
+
+    private void ApplyRider()
+    {
+        _rider?.QueueFree();
+        if (_model == null)
+        {
+            return;
+        }
+
+        _rider = RiderLooks.Build(RiderSkins.Current, true);
+        _rider.Position = new Vector3(0f, 0.82f, 0.06f);
+        _rider.Visible = Mounted;
+        _model.AddChild(_rider);
+    }
+
+    private void ShowRider(bool visible)
+    {
+        if (_rider != null)
+        {
+            _rider.Visible = visible;
+        }
     }
 
     public void WakeForRide(bool autopilot)
@@ -66,6 +97,7 @@ public partial class BikeController : RigidBody3D
         Freeze = false;
         Sleeping = false;
         Autopilot = autopilot;
+        ShowRider(true);
     }
 
     public void Park()
@@ -76,6 +108,7 @@ public partial class BikeController : RigidBody3D
         AngularVelocity = Vector3.Zero;
         ForwardSpeed = 0f;
         Freeze = true;
+        ShowRider(false);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -363,17 +396,12 @@ public partial class BikeController : RigidBody3D
         AddChild(_model);
         Color yellow = new Color("ffc53d");
         Color black = new Color("202226");
-        Color jacket = new Color("0f766e");
         MeshUtil.Box(_model, new Vector3(0.22f, 0.08f, 1.25f), new Vector3(0f, 0.46f, -0.05f), yellow);
         _rearWheel = MeshUtil.Cylinder(_model, 0.32f, 0.14f, new Vector3(0f, 0.32f, 0.42f), black, true);
         _frontWheel = MeshUtil.Cylinder(_model, 0.32f, 0.14f, new Vector3(0f, 0.32f, -0.72f), black, true);
         MeshUtil.Box(_model, new Vector3(0.06f, 0.42f, 0.06f), new Vector3(0f, 0.62f, -0.62f), black);
         MeshUtil.Box(_model, new Vector3(0.52f, 0.04f, 0.05f), new Vector3(0f, 0.84f, -0.64f), black);
         MeshUtil.Box(_model, new Vector3(0.2f, 0.06f, 0.26f), new Vector3(0f, 0.74f, 0.08f), black);
-        MeshUtil.Box(_model, new Vector3(0.34f, 0.48f, 0.28f), new Vector3(0f, 1.08f, -0.02f), jacket);
-        var helmet = MeshUtil.Fresh(yellow, 0.4f);
-        MeshUtil.Sphere(_model, 0.16f, new Vector3(0f, 1.46f, -0.04f), helmet);
-        MeshUtil.Box(_model, new Vector3(0.18f, 0.08f, 0.12f), new Vector3(0f, 1.42f, -0.16f), new Color("1a1a1a"));
         var headlamp = MeshUtil.Fresh(new Color("fff4d2"), 0.3f);
         headlamp.EmissionEnabled = true;
         headlamp.Emission = new Color("fff1c9");

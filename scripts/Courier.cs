@@ -15,6 +15,7 @@ public partial class Courier : CharacterBody3D
     private Vector3 _goal;
     private float _stumbleCd;
     private MeshInstance3D? _handMeal;
+    private Node3D? _mascot;
 
     public bool HasMeal { get; private set; }
     public bool WrongGrab { get; private set; }
@@ -44,13 +45,26 @@ public partial class Courier : CharacterBody3D
         AddChild(shape);
         var body = new Node3D { Name = "Body" };
         AddChild(body);
-        MeshUtil.Box(body, new Vector3(0.42f, 0.7f, 0.28f), new Vector3(0f, 1.05f, 0f), new Color("0f766e"));
-        MeshUtil.Box(body, new Vector3(0.28f, 0.22f, 0.24f), new Vector3(0f, 1.55f, 0f), new Color("f0c9a0"));
-        MeshUtil.Box(body, new Vector3(0.34f, 0.16f, 0.34f), new Vector3(0f, 1.72f, 0f), new Color("ffc53d"));
         var hand = new Marker3D { Name = "Hand", Position = new Vector3(0.28f, 1.05f, -0.22f) };
         AddChild(hand);
         _handMeal = MeshUtil.Box(hand, new Vector3(0.32f, 0.2f, 0.26f), Vector3.Zero, new Color("e25b2a"));
         _handMeal.Visible = false;
+        RiderSkins.EnsureLoaded();
+        RiderSkins.Changed += ApplySkin;
+        ApplySkin();
+    }
+
+    public override void _ExitTree()
+    {
+        RiderSkins.Changed -= ApplySkin;
+    }
+
+    private void ApplySkin()
+    {
+        _mascot?.QueueFree();
+        _mascot = RiderLooks.Build(RiderSkins.Current, false);
+        GetNode<Node3D>("Body").AddChild(_mascot);
+        GetNode<Marker3D>("Hand").Position = RiderLooks.MealHand(RiderSkins.Current);
     }
 
     public override void _UnhandledInput(InputEvent @event)

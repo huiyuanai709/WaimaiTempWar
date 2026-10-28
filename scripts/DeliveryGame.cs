@@ -175,7 +175,8 @@ public partial class DeliveryGame : Node3D
                 && indoor
                 && pool
                 && FileHas("hot_delivery")
-                && FileHas("clean_pickup");
+                && FileHas("clean_pickup")
+                && RiderDressed();
             Conclude(ok, ok ? "ok" : _autotestWhy.Length == 0 ? "checks failed" : _autotestWhy);
         }
     }
@@ -306,6 +307,18 @@ public partial class DeliveryGame : Node3D
         using Godot.FileAccess file = Godot.FileAccess.Open("/tmp/waimai-autotest.txt", Godot.FileAccess.ModeFlags.Write);
         file?.StoreString(line + "\n");
         GetTree().Quit(ok ? 0 : 1);
+    }
+
+    private bool RiderDressed()
+    {
+        int crowd = GetTree().GetNodesInGroup("crowd-penguin").Count;
+        Node3D? walk = GetNodeOrNull<Node3D>("Courier/Body/FatGuga");
+        Node3D? seat = GetNodeOrNull<Node3D>("Bike/Model/FatGuga");
+        return crowd >= 4
+            && walk != null
+            && walk.GetChildCount() >= 6
+            && seat != null
+            && seat.GetChildCount() >= 6;
     }
 
     private static bool FileHas(string id)

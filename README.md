@@ -49,9 +49,23 @@ On foot (shop and building) W A S D walks relative to the camera. On the bike th
 | E | Take a bag, mount, call the elevator, deliver | |
 | Space | | Handbrake |
 | F | | Slam the lid shut |
+| 1 / 2 / 3 | 胖咕嘎 / 瘦咕嘎 / Doro | Same skins, sitting on the bike |
+| Q | Next rider skin | Next rider skin |
 | Tab | Achievement list | Achievement list |
 | R | Restart | Restart |
 | F9 | Clear saved achievements | Clear saved achievements |
+
+The last skin is saved in `user://rider.cfg`. Headless runs always start as 胖咕嘎 and print `RIDER_SKIN=FatGuga`.
+
+## Riders
+
+The courier and the shop queue are original procedural mascots made in C# from spheres and boxes. No model pack is vendored, and nothing here is a Nikke, Arknights, or other official mesh.
+
+- **胖咕嘎 FatGuga** — round black-and-white penguin, short flippers, bean eyes, a tiny visor.
+- **瘦咕嘎 ThinGuga** — the same palette stretched tall, with a long body and a small belly.
+- **Doro** — a soft pink and cream round critter with floppy ears and a simple blonde bob. The name is the meme nickname only; the mesh is original.
+
+Shop customers reuse the fat and thin penguins at a smaller scale. Press 1, 2, or 3 to switch who you are playing. The parked bike shows the skin once you mount.
 
 ## How a run works
 
