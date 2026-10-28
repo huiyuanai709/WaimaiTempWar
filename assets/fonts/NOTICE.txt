@@ -1,0 +1,6 @@
+WenQuanYi Micro Hei
+Copyright (c) 2007-2009, WenQuanYi Project contributors.
+Licensed under the Apache License, Version 2.0.
+Source: https://github.com/anthonyfok/fonts-wqy-microhei
+
+The font file is included so Chinese HUD text renders without a system font.

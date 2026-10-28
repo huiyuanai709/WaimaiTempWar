@@ -1,0 +1,31 @@
+# Godot
+.godot/
+*.translation
+.import/
+
+# .NET / Mono
+.mono/
+data_*/
+mono_crash.*.json
+bin/
+obj/
+.vs/
+*.csproj.user
+*.suo
+*.user
+*.userprefs
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Export artifacts
+export/
+builds/
+*.apk
+*.aab
+*.pck
+*.zip

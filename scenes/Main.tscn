@@ -1,0 +1,53 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/DeliveryGame.cs" id="1_game"]
+[ext_resource type="Script" path="res://scripts/ChaseCamera.cs" id="2_cam"]
+[ext_resource type="Script" path="res://scripts/Streetscape.cs" id="3_street"]
+[ext_resource type="Script" path="res://scripts/BikeController.cs" id="4_bike"]
+[ext_resource type="Script" path="res://scripts/CargoRig.cs" id="5_cargo"]
+[ext_resource type="Script" path="res://scripts/TemperatureSim.cs" id="6_temp"]
+[ext_resource type="Script" path="res://scripts/EventDirector.cs" id="7_evt"]
+[ext_resource type="Script" path="res://scripts/Achievements.cs" id="8_ach"]
+[ext_resource type="Script" path="res://scripts/Hud.cs" id="9_hud"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_game")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 68.0
+script = ExtResource("2_cam")
+
+[node name="Street" type="Node3D" parent="."]
+script = ExtResource("3_street")
+
+[node name="Bike" type="RigidBody3D" parent="."]
+collision_layer = 2
+collision_mask = 9
+mass = 95.0
+can_sleep = false
+continuous_cd = true
+script = ExtResource("4_bike")
+
+[node name="Rack" type="Marker3D" parent="Bike"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, 0.98)
+
+[node name="Cargo" type="Node3D" parent="."]
+script = ExtResource("5_cargo")
+
+[node name="Temperature" type="Node" parent="."]
+script = ExtResource("6_temp")
+
+[node name="Events" type="Node" parent="."]
+script = ExtResource("7_evt")
+
+[node name="Achievements" type="Node" parent="."]
+script = ExtResource("8_ach")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("9_hud")
