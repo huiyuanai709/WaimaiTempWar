@@ -36,6 +36,7 @@ public static class GameFonts
 public static class MeshUtil
 {
     private static readonly Dictionary<int, StandardMaterial3D> Cache = new();
+    private static readonly Dictionary<string, Texture2D> ImageCache = new();
 
     public static StandardMaterial3D Shared(Color color, float roughness = 0.72f)
     {
@@ -58,6 +59,30 @@ public static class MeshUtil
             Roughness = roughness,
             Metallic = 0.04f,
         };
+    }
+
+    /// <summary>
+    /// Loads a still image as an ImageTexture without needing a Godot .import file.
+    /// </summary>
+    public static Texture2D? LoadImageTexture(string resPath)
+    {
+        if (ImageCache.TryGetValue(resPath, out Texture2D? cached))
+        {
+            return cached;
+        }
+
+        string path = ProjectSettings.GlobalizePath(resPath);
+        var image = new Image();
+        Error err = image.Load(path);
+        if (err != Error.Ok)
+        {
+            GD.PrintErr($"Rider art failed to load ({err}) from {path}");
+            return null;
+        }
+
+        Texture2D texture = ImageTexture.CreateFromImage(image);
+        ImageCache[resPath] = texture;
+        return texture;
     }
 
     public static MeshInstance3D Box(Node parent, Vector3 size, Vector3 position, Color color, bool shadow = true)
@@ -98,7 +123,13 @@ public static class MeshUtil
         return mesh;
     }
 
-    public static MeshInstance3D Sphere(Node parent, float radius, Vector3 position, Material material)
+    public static MeshInstance3D Sphere(
+        Node parent,
+        float radius,
+        Vector3 position,
+        Material material,
+        int radialSegments = 12,
+        int rings = 8)
     {
         var mesh = new MeshInstance3D
         {
@@ -106,8 +137,8 @@ public static class MeshUtil
             {
                 Radius = radius,
                 Height = radius * 2f,
-                RadialSegments = 12,
-                Rings = 8,
+                RadialSegments = radialSegments,
+                Rings = rings,
             },
             Position = position,
             MaterialOverride = material,

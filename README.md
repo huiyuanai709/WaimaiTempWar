@@ -59,13 +59,15 @@ The last skin is saved in `user://rider.cfg`. Headless runs always start as 胖�
 
 ## Riders
 
-The courier and the shop queue are original procedural mascots made in C# from spheres and boxes. No model pack is vendored, and nothing here is a Nikke, Arknights, or other official mesh.
+The courier and the shop crowd are original procedural mascots made in C# from spheres and boxes, shaped to match the fan-inspired concept art under `assets/riders/`. No third-party model pack is vendored. This project is **not affiliated with** Endfield, Nikke, or any other game; the mascots are original meshes plus original concept portraits (see `assets/riders/NOTICE.txt`).
 
-- **胖咕嘎 FatGuga** — round black-and-white penguin, short flippers, bean eyes, a tiny visor.
-- **瘦咕嘎 ThinGuga** — the same palette stretched tall, with a long body and a small belly.
-- **Doro** — a soft pink and cream round critter with floppy ears and a simple blonde bob. The name is the meme nickname only; the mesh is original.
+Each skin also hangs a small billboard of its concept portrait so the character reads clearly at a glance.
 
-Shop customers reuse the fat and thin penguins at a smaller scale. Press 1, 2, or 3 to switch who you are playing. The parked bike shows the skin once you mount.
+- **胖咕嘎 FatGuga** — chubby charcoal-and-white penguin, orange delivery helmet with black brim, orange thermal backpack, pink blush, short flippers, orange three-toed feet.
+- **瘦咕嘎 ThinGuga** — tall skinny penguin with a long neck, oversized open orange vest, tall black delivery bag, white eye patches, orange webbed feet.
+- **Doro** — white four-leg blob with pastel pink hair and a side bun + purple bow, lavender eyes, orange scarf, and an orange delivery box with a purple lid. The name is the meme nickname only; the mesh and portrait are original.
+
+Shop customers reuse the fat and thin penguins at a smaller scale (no concept billboard). Press 1, 2, or 3 to switch who you are playing. The parked bike shows the skin once you mount.
 
 ## How a run works
 
@@ -142,5 +144,6 @@ Tab opens the list. Unlocking shows a toast. F9 wipes the file.
 - `scenes/Main.tscn` — chase camera, lights, and the nodes the scripts drive
 - `scripts/` — C# gameplay only (shop, bike, building, spring cooler, pain-event pool, temperature, achievements, HUD, street)
 - `assets/fonts/` — WenQuanYi Micro Hei so the Chinese UI has glyphs (Apache 2.0; see `NOTICE.txt`)
+- `assets/riders/` — original fan-inspired concept portraits for FatGuga / ThinGuga / Doro (see `NOTICE.txt`)
 
 There is no paid content and no map download. Buildings, curbs, crosswalks, signals, and parked cars are generated in `Streetscape`.
