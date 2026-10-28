@@ -1,0 +1,6 @@
+Rider concept art in this folder (fat-guga.jpg, thin-guga.jpg, doro.jpg) is
+original fan-inspired illustration drawn for Delivery Temperature War.
+
+These are not official assets from Endfield, Nikke, or any other game, and this
+project is not affiliated with or endorsed by those works. The in-game mascots
+are procedural meshes shaped to match this concept art.
