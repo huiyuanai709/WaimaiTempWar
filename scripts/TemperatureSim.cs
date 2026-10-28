@@ -14,9 +14,16 @@ public partial class TemperatureSim : Node
     private CargoRig? _cargo;
     private EventDirector? _events;
     private DeliveryGame? _game;
+    private PhaseEvents? _pain;
+    private BuildingInterior? _building;
 
     public float Celsius { get; private set; } = Track.StartCelsius;
-    public bool Paused { get; set; }
+    public bool Paused { get; set; } = true;
+
+    public void StartClock()
+    {
+        Paused = false;
+    }
 
     public override void _EnterTree()
     {
@@ -45,13 +52,15 @@ public partial class TemperatureSim : Node
         }
 
         float dt = (float)delta;
-        float wind = Mathf.Max(0f, _bike.ForwardSpeed) * SpeedCooling;
+        float wind = _bike.Mounted ? Mathf.Max(0f, _bike.ForwardSpeed) * SpeedCooling : 0f;
         if (_events != null)
         {
             wind += _events.WindBonus;
         }
 
-        float extra = _events?.ExtraCooling ?? 0f;
+        _pain ??= GetTree().GetFirstNodeInGroup("pain") as PhaseEvents;
+        _building ??= GetTree().GetFirstNodeInGroup("building") as BuildingInterior;
+        float extra = (_events?.ExtraCooling ?? 0f) + (_pain?.Cooling ?? 0f) + (_building?.StairCooling ?? 0f);
         float loss = BaseCooling
             + wind
             + LidCooling * _cargo.LidOpen01

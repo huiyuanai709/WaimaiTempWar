@@ -64,7 +64,8 @@ public partial class Streetscape : Node3D
     private void BuildGround()
     {
         AddStatic(new Vector3(80f, 1f, 190f), new Vector3(0f, -0.5f, -48f), new Color("3c424a"));
-        AddSidewalk(16f, Track.IntersectionZ + 12f);
+        AddSidewalk(16f, Track.IntersectionZ + 12f, true);
+        Decal(new Vector3(8.6f, 0.02f, Track.ShopZ), new Vector3(7f, 0.02f, 6f), new Color("c9c1b2"));
         AddSidewalk(Track.IntersectionZ - 12f, -114f);
         Decal(new Vector3(-22f, 0.045f, Track.IntersectionZ), new Vector3(28f, 0.02f, 2.4f), new Color("c9c1b2"));
         Decal(new Vector3(22f, 0.045f, Track.IntersectionZ), new Vector3(28f, 0.02f, 2.4f), new Color("c9c1b2"));
@@ -118,7 +119,11 @@ public partial class Streetscape : Node3D
                 continue;
             }
 
-            SpawnBuilding(1, center, depth, rng, palette);
+            if (!Overlaps(center, depth, Track.ShopZ, 12f))
+            {
+                SpawnBuilding(1, center, depth, rng, palette);
+            }
+
             SpawnBuilding(-1, center, depth, rng, palette);
         }
 
@@ -280,14 +285,32 @@ public partial class Streetscape : Node3D
         return area;
     }
 
-    private void AddSidewalk(float fromZ, float toZ)
+    private void AddSidewalk(float fromZ, float toZ, bool shopGap = false)
     {
         float min = Mathf.Min(fromZ, toZ);
         float max = Mathf.Max(fromZ, toZ);
         float length = max - min;
         float center = (min + max) * 0.5f;
-        AddStatic(new Vector3(2.3f, 0.08f, length), new Vector3(6.15f, 0.04f, center), new Color("c9c1b2"));
         AddStatic(new Vector3(2.3f, 0.08f, length), new Vector3(-6.15f, 0.04f, center), new Color("c9c1b2"));
+        if (!shopGap)
+        {
+            AddStatic(new Vector3(2.3f, 0.08f, length), new Vector3(6.15f, 0.04f, center), new Color("c9c1b2"));
+            return;
+        }
+
+        AddSideChunk(11f, max);
+        AddSideChunk(min, 5f);
+    }
+
+    private void AddSideChunk(float fromZ, float toZ)
+    {
+        if (toZ - fromZ < 0.5f)
+        {
+            return;
+        }
+
+        float center = (fromZ + toZ) * 0.5f;
+        AddStatic(new Vector3(2.3f, 0.08f, toZ - fromZ), new Vector3(6.15f, 0.04f, center), new Color("c9c1b2"));
     }
 
     private StaticBody3D AddStatic(Vector3 size, Vector3 position, Color color)

@@ -17,11 +17,15 @@ public partial class BikeController : RigidBody3D
     private MeshInstance3D? _rearWheel;
     private MeshInstance3D? _frontWheel;
     private Node3D? _model;
+    private Node3D? _rider;
     private StandardMaterial3D? _brakeLamp;
     private EventDirector? _events;
     private CargoRig? _cargo;
 
+    private PhaseEvents? _pain;
+
     public bool Autopilot { get; set; }
+    public bool Mounted { get; private set; }
     public float ForwardSpeed { get; private set; }
     public float Steer => _steer;
     public float Throttle => _throttle;
@@ -53,12 +57,92 @@ public partial class BikeController : RigidBody3D
         GlobalPosition = new Vector3(Track.LaneX, 0.02f, Track.StartZ);
         GlobalRotation = Vector3.Zero;
         BuildBody();
+        Mounted = false;
+        Freeze = true;
+        RiderSkins.EnsureLoaded();
+        RiderSkins.Changed += ApplyRider;
+        ApplyRider();
+    }
+
+    public override void _ExitTree()
+    {
+        RiderSkins.Changed -= ApplyRider;
+    }
+
+    private void ApplyRider()
+    {
+        _rider?.QueueFree();
+        if (_model == null)
+        {
+            return;
+        }
+
+        _rider = RiderLooks.Build(RiderSkins.Current, true);
+        _rider.Position = new Vector3(0f, 0.82f, 0.06f);
+        _rider.Visible = Mounted;
+        _model.AddChild(_rider);
+    }
+
+    private void ShowRider(bool visible)
+    {
+        if (_rider != null)
+        {
+            _rider.Visible = visible;
+        }
+    }
+
+    public void WakeForRide(bool autopilot)
+    {
+        Mounted = true;
+        Freeze = false;
+        Sleeping = false;
+        Autopilot = autopilot;
+        ShowRider(true);
+    }
+
+    public void Park()
+    {
+        Autopilot = false;
+        Mounted = false;
+        LinearVelocity = Vector3.Zero;
+        AngularVelocity = Vector3.Zero;
+        ForwardSpeed = 0f;
+        Freeze = true;
+        ShowRider(false);
     }
 
     public override void _PhysicsProcess(double delta)
     {
         _events ??= GetTree().GetFirstNodeInGroup("events") as EventDirector;
         _cargo ??= GetTree().GetFirstNodeInGroup("cargo") as CargoRig;
+        _pain ??= GetTree().GetFirstNodeInGroup("pain") as PhaseEvents;
+        if (!Mounted)
+        {
+            return;
+        }
+
+        float kick = _pain?.ConsumeImpulse() ?? 0f;
+        if (Mathf.Abs(kick) > 0.1f)
+        {
+            ApplyCentralImpulse(GlobalTransform.Basis.X * kick);
+        }
+
+        if (_pain?.ConsumeLid() == true)
+        {
+            _cargo?.NudgeLid(2.2f);
+        }
+
+        if (_pain?.ConsumeFood() == true)
+        {
+            _cargo?.NudgeContents(0.45f);
+        }
+
+        float spill = _pain?.ConsumeSpill() ?? 0f;
+        if (spill > 0f)
+        {
+            _cargo?.AddSpill(spill);
+        }
+
         bool locked = _events != null && _events.ControlsLocked;
         if (Autopilot)
         {
@@ -135,9 +219,10 @@ public partial class BikeController : RigidBody3D
                 velocity += away * 2.4f;
             }
         }
-        if (ForwardSpeed > MaxSpeed)
+        float cap = MaxSpeed * Mathf.Clamp(_pain?.BikeScale ?? 1f, 0.45f, 1f);
+        if (ForwardSpeed > cap)
         {
-            velocity -= forward * (ForwardSpeed - MaxSpeed);
+            velocity -= forward * (ForwardSpeed - cap);
         }
 
         velocity.Y = Mathf.Clamp(velocity.Y, -8f, 3.5f);
@@ -155,16 +240,16 @@ public partial class BikeController : RigidBody3D
         {
             drive = -7f;
         }
-        else if (_throttle > 0f && ForwardSpeed < MaxSpeed)
+        else if (_throttle > 0f && ForwardSpeed < cap)
         {
-            drive = 14f * _throttle;
+            drive = 14f * _throttle * Mathf.Clamp(_pain?.BikeScale ?? 1f, 0.45f, 1f);
         }
 
         velocity += forward * drive * step;
         ForwardSpeed = velocity.Dot(forward);
-        if (ForwardSpeed > MaxSpeed)
+        if (ForwardSpeed > cap)
         {
-            velocity -= forward * (ForwardSpeed - MaxSpeed);
+            velocity -= forward * (ForwardSpeed - cap);
         }
 
         state.LinearVelocity = velocity;
@@ -311,17 +396,12 @@ public partial class BikeController : RigidBody3D
         AddChild(_model);
         Color yellow = new Color("ffc53d");
         Color black = new Color("202226");
-        Color jacket = new Color("0f766e");
         MeshUtil.Box(_model, new Vector3(0.22f, 0.08f, 1.25f), new Vector3(0f, 0.46f, -0.05f), yellow);
         _rearWheel = MeshUtil.Cylinder(_model, 0.32f, 0.14f, new Vector3(0f, 0.32f, 0.42f), black, true);
         _frontWheel = MeshUtil.Cylinder(_model, 0.32f, 0.14f, new Vector3(0f, 0.32f, -0.72f), black, true);
         MeshUtil.Box(_model, new Vector3(0.06f, 0.42f, 0.06f), new Vector3(0f, 0.62f, -0.62f), black);
         MeshUtil.Box(_model, new Vector3(0.52f, 0.04f, 0.05f), new Vector3(0f, 0.84f, -0.64f), black);
         MeshUtil.Box(_model, new Vector3(0.2f, 0.06f, 0.26f), new Vector3(0f, 0.74f, 0.08f), black);
-        MeshUtil.Box(_model, new Vector3(0.34f, 0.48f, 0.28f), new Vector3(0f, 1.08f, -0.02f), jacket);
-        var helmet = MeshUtil.Fresh(yellow, 0.4f);
-        MeshUtil.Sphere(_model, 0.16f, new Vector3(0f, 1.46f, -0.04f), helmet);
-        MeshUtil.Box(_model, new Vector3(0.18f, 0.08f, 0.12f), new Vector3(0f, 1.42f, -0.16f), new Color("1a1a1a"));
         var headlamp = MeshUtil.Fresh(new Color("fff4d2"), 0.3f);
         headlamp.EmissionEnabled = true;
         headlamp.Emission = new Color("fff1c9");
