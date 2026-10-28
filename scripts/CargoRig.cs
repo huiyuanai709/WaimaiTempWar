@@ -84,6 +84,36 @@ public partial class CargoRig : Node3D
             BuildFood();
             BuildLid();
         }
+
+        SetMealLoaded(false);
+    }
+
+    public void SetMealLoaded(bool loaded)
+    {
+        if (_shell != null)
+        {
+            _shell.Visible = loaded;
+        }
+
+        if (_belly != null)
+        {
+            _belly.Visible = loaded;
+        }
+
+        if (_food != null)
+        {
+            _food.Visible = loaded;
+        }
+
+        if (_lid != null)
+        {
+            _lid.Visible = loaded;
+        }
+
+        if (_bag != null)
+        {
+            _bag.Visible = loaded;
+        }
     }
 
     public override void _PhysicsProcess(double delta)

@@ -38,6 +38,9 @@ public partial class EventDirector : Node
     public bool HardBrakeRan { get; private set; }
     public bool HardBrakeCleared { get; private set; }
     public int DistinctCount => _triggered.Count;
+    public bool ArrivalStarted => _arrivalStarted;
+    public bool ArmedElevator => _armed.Contains(DeliveryEvent.ElevatorWait);
+    public bool ArmedGate => _armed.Contains(DeliveryEvent.WrongGate);
 
     [Signal]
     public delegate void HoldStartedEventHandler();
@@ -59,6 +62,23 @@ public partial class EventDirector : Node
         _achievements = GetNode<Achievements>("../Achievements");
         Arm();
         _street.Hook(this);
+        var pain = new PhaseEvents { Name = "Pain" };
+        AddChild(pain);
+    }
+
+    public void SetBanner(string text)
+    {
+        Banner = text;
+    }
+
+    public void CountEvent(DeliveryEvent ev)
+    {
+        Note(ev);
+    }
+
+    public bool Saw(DeliveryEvent ev)
+    {
+        return _triggered.Contains(ev);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -143,12 +163,9 @@ public partial class EventDirector : Node
         StopRouteEffects();
         _active = null;
         _queued = null;
-        DeliveryEvent arrival = _armed.Contains(DeliveryEvent.WrongGate) && !_armed.Contains(DeliveryEvent.ElevatorWait)
-            ? DeliveryEvent.WrongGate
-            : _armed.Contains(DeliveryEvent.ElevatorWait)
-                ? DeliveryEvent.ElevatorWait
-                : DeliveryEvent.ElevatorWait;
-        Begin(arrival);
+        ControlsLocked = true;
+        Banner = "到楼下了   E 进楼送餐";
+        GD.Print("ARRIVE building");
     }
 
     private void Arm()

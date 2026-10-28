@@ -18,6 +18,20 @@ public partial class ChaseCamera : Camera3D
 
     public override void _PhysicsProcess(double delta)
     {
+        var courier = GetTree().GetFirstNodeInGroup("courier") as Courier;
+        var bike = GetNode<Node3D>("../Bike");
+        Node3D next = courier != null && courier.OnFoot ? courier : bike;
+        if (next != _target)
+        {
+            _target = next;
+            _snapped = false;
+        }
+
+        Follow(delta, courier != null && courier.OnFoot ? 4.1f : 5.6f);
+    }
+
+    private void Follow(double delta, float distance)
+    {
         if (_target == null)
         {
             return;
@@ -34,7 +48,7 @@ public partial class ChaseCamera : Camera3D
         forward = forward.Normalized();
         Vector3 focus = _target.GlobalPosition + Vector3.Up * 1.15f + forward * 1.4f;
         Vector3 from = _target.GlobalPosition + Vector3.Up * 1.5f;
-        Vector3 want = _target.GlobalPosition - forward * 5.6f + Vector3.Up * 2.55f;
+        Vector3 want = _target.GlobalPosition - forward * distance + Vector3.Up * (distance < 5f ? 2.1f : 2.55f);
         if (GetWorld3D() != null)
         {
             var query = PhysicsRayQueryParameters3D.Create(from, want, Layers.World);

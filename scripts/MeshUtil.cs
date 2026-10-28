@@ -116,6 +116,25 @@ public static class MeshUtil
         return mesh;
     }
 
+    public static StaticBody3D Solid(Node parent, Vector3 size, Vector3 position, Color color, Vector3 rotationDegrees = default)
+    {
+        var body = new StaticBody3D
+        {
+            Position = position,
+            RotationDegrees = rotationDegrees,
+            CollisionLayer = Layers.World,
+            CollisionMask = 0,
+        };
+        body.AddChild(new MeshInstance3D
+        {
+            Mesh = new BoxMesh { Size = size },
+            MaterialOverride = Shared(color, 0.84f),
+        });
+        body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = size } });
+        parent.AddChild(body);
+        return body;
+    }
+
     public static Label3D Sign(Node parent, string text, Vector3 position, float pixelSize = 0.008f)
     {
         var label = new Label3D

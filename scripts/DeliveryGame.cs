@@ -8,8 +8,9 @@ public partial class DeliveryGame : Node3D
 {
     public enum RunPhase
     {
+        Pickup,
         Ride,
-        Hold,
+        Indoors,
         Done,
     }
 
@@ -20,13 +21,12 @@ public partial class DeliveryGame : Node3D
     private bool _finishOnce;
     private bool _autotestDone;
     private float _doneHold;
-    private float _autopilotArm = -1f;
     private float _nextAutotestLog;
     private float _maxSag;
     private float _maxTilt;
     private string _autotestWhy = "";
 
-    public RunPhase Phase { get; private set; } = RunPhase.Ride;
+    public RunPhase Phase { get; private set; } = RunPhase.Pickup;
     public bool Success { get; private set; }
     public string ResultText { get; private set; } = "";
     public float Elapsed { get; private set; }
@@ -67,40 +67,31 @@ public partial class DeliveryGame : Node3D
         _temp = GetNode<TemperatureSim>("Temperature");
         _cargo = GetNode<CargoRig>("Cargo");
         _achievements = GetNode<Achievements>("Achievements");
-        _events.HoldStarted += () =>
-        {
-            if (Phase == RunPhase.Ride)
-            {
-                Phase = RunPhase.Hold;
-            }
-        };
-        _events.ArrivalFinished += Finish;
         if (IsAutotest())
         {
-            if (DisplayServer.GetName() == "headless")
-            {
-                GetNode<BikeController>("Bike").Autopilot = true;
-            }
-            else
-            {
-                _autopilotArm = 2f;
-            }
-
             GD.Print("AUTOTEST on");
         }
     }
 
+    public void BeginRide()
+    {
+        Phase = RunPhase.Ride;
+        GetNodeOrNull<PhaseEvents>("Events/Pain")?.OnPhase(RunPhase.Ride);
+    }
+
+    public void BeginIndoors()
+    {
+        Phase = RunPhase.Indoors;
+        GetNodeOrNull<PhaseEvents>("Events/Pain")?.OnPhase(RunPhase.Indoors);
+    }
+
+    public void FinishDelivery()
+    {
+        Finish();
+    }
+
     public override void _Process(double delta)
     {
-        if (_autopilotArm > 0f)
-        {
-            _autopilotArm -= (float)delta;
-            if (_autopilotArm <= 0f)
-            {
-                GetNode<BikeController>("Bike").Autopilot = true;
-            }
-        }
-
         if (Phase != RunPhase.Done)
         {
             Elapsed += (float)delta;
@@ -125,13 +116,20 @@ public partial class DeliveryGame : Node3D
         }
 
         var bike = GetNode<BikeController>("Bike");
+        var walker = GetNodeOrNull<Courier>("Courier");
+        if (walker != null && walker.OnFoot && walker.GlobalPosition.Y < -2f)
+        {
+            Conclude(false, "courier fell");
+            return;
+        }
+
         if (bike.GlobalPosition.Y < -1.2f)
         {
             Conclude(false, "bike fell");
             return;
         }
 
-        if (Elapsed > 75f && Phase != RunPhase.Done)
+        if (Elapsed > 110f && Phase != RunPhase.Done)
         {
             Conclude(false, "timeout");
             return;
@@ -148,16 +146,36 @@ public partial class DeliveryGame : Node3D
                 }
             }
 
+            var shop = GetNodeOrNull<PickupShop>("Shop");
+            var building = GetNodeOrNull<BuildingInterior>("Building");
+            var pain = GetNodeOrNull<PhaseEvents>("Events/Pain");
+            bool indoor = building != null && building.Finished && _achievements != null && (
+                building.UsedStairs
+                    ? _achievements.IsUnlocked("stair_hot")
+                    : _achievements.IsUnlocked("elevator_clean"));
+            bool pool = pain != null
+                && pain.Has("queue_cut")
+                && pain.Has("same_name")
+                && pain.Has("puddle")
+                && pain.Has("wet_brake")
+                && pain.Has("full_car");
             bool ok = Success
                 && _achievements != null
                 && _achievements.IsUnlocked("hot_delivery")
+                && _achievements.IsUnlocked("clean_pickup")
+                && _achievements.IsUnlocked("pain_hot")
                 && _events != null
                 && _events.DistinctCount >= 3
                 && _cargo != null
                 && _cargo.CoolerLive
                 && _maxSag > 0.02f
                 && _maxTilt > 0.05f
-                && FileHas("hot_delivery");
+                && shop != null
+                && shop.Claimed
+                && indoor
+                && pool
+                && FileHas("hot_delivery")
+                && FileHas("clean_pickup");
             Conclude(ok, ok ? "ok" : _autotestWhy.Length == 0 ? "checks failed" : _autotestWhy);
         }
     }
@@ -176,6 +194,8 @@ public partial class DeliveryGame : Node3D
         FinalSpill = _cargo.Spill01;
         FinalCrush = _cargo.Crush01;
         Success = FinalCelsius >= Track.TargetCelsius && FinalSpill < Track.SpillFail;
+        var building = GetNodeOrNull<BuildingInterior>("Building");
+        var pain = GetNodeOrNull<PhaseEvents>("Events/Pain");
         if (Success)
         {
             _achievements.Unlock("hot_delivery");
@@ -183,6 +203,26 @@ public partial class DeliveryGame : Node3D
             {
                 _achievements.Unlock("zero_spill");
             }
+
+            if (pain != null && pain.Count >= 3)
+            {
+                _achievements.Unlock("pain_hot");
+            }
+        }
+
+        if (building != null && building.UsedElevator && FinalSpill < 0.01f)
+        {
+            _achievements.Unlock("elevator_clean");
+        }
+
+        if (building != null && building.UsedStairs && FinalCelsius >= Track.TargetCelsius)
+        {
+            _achievements.Unlock("stair_hot");
+        }
+
+        if (_events.Saw(DeliveryEvent.RainGust) && FinalSpill < 0.01f)
+        {
+            _achievements.Unlock("rain_dry");
         }
 
         string heat = FinalCelsius >= 75f
@@ -193,11 +233,17 @@ public partial class DeliveryGame : Node3D
                     ? "刚好够热，再慢就凉了。"
                     : "低于 60°C，这单凉了。";
         string spill = FinalSpill >= Track.SpillFail ? "汤洒了，盒子空了一半。" : "";
+        string how = building != null && building.UsedStairs ? "楼梯送到 302。" : "电梯送到 302。";
         string title = Success ? "送达成功  Delivered hot" : "送达失败  Order ruined";
         var body = new StringBuilder();
         body.AppendLine(title);
         body.AppendLine($"温度 {FinalCelsius:0.0}°C    洒出 {FinalSpill * 100f:0}%    压损 {FinalCrush * 100f:0}%");
         body.AppendLine(heat);
+        body.AppendLine(how);
+        if (pain != null)
+        {
+            body.AppendLine($"路况事件 {pain.Count}  {pain.FiredLine()}");
+        }
         if (spill.Length > 0)
         {
             body.AppendLine(spill);
@@ -240,7 +286,7 @@ public partial class DeliveryGame : Node3D
         var bike = GetNode<BikeController>("Bike");
         string line = string.Format(
             CultureInfo.InvariantCulture,
-            "AUTOTEST_JSON {{\"ok\":{0},\"why\":\"{1}\",\"temp\":{2:0.00},\"spill\":{3:0.000},\"crush\":{4:0.000},\"sag\":{5:0.000},\"tilt\":{6:0.000},\"events\":{7},\"cooler\":{8},\"soft\":{9},\"pos\":\"{10:0.0},{11:0.0},{12:0.0}\"}}",
+            "AUTOTEST_JSON {{\"ok\":{0},\"why\":\"{1}\",\"temp\":{2:0.00},\"spill\":{3:0.000},\"crush\":{4:0.000},\"sag\":{5:0.000},\"tilt\":{6:0.000},\"events\":{7},\"cooler\":{8},\"soft\":{9},\"pool\":\"{10}\",\"indoor\":\"{11}\",\"pos\":\"{12:0.0},{13:0.0},{14:0.0}\"}}",
             ok ? "true" : "false",
             why,
             _temp?.Celsius ?? -1f,
@@ -251,6 +297,8 @@ public partial class DeliveryGame : Node3D
             _events?.DistinctCount ?? 0,
             _cargo?.CoolerLive == true ? "true" : "false",
             _cargo?.SoftBodyActive == true ? "true" : "false",
+            GetNodeOrNull<PhaseEvents>("Events/Pain")?.FiredLine() ?? "",
+            GetNodeOrNull<BuildingInterior>("Building")?.UsedStairs == true ? "stairs" : "elevator",
             bike.GlobalPosition.X,
             bike.GlobalPosition.Y,
             bike.GlobalPosition.Z);

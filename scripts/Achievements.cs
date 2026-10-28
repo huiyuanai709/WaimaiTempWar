@@ -29,6 +29,11 @@ public partial class Achievements : Node
         new("zero_spill", "滴汤不洒", "Zero spill", "Finish a delivery with under 1% spilled."),
         new("hard_brake", "急刹不碎", "Clean hard brake", "Survive the sudden-brake event with crush still under 8%."),
         new("triple_event", "一路三事", "Three events", "Trigger three different random events in one run."),
+        new("clean_pickup", "号对袋对", "Right bag", "Take the bag that matches your ticket without grabbing a wrong one."),
+        new("stair_hot", "爬楼还热", "Hot stairs", "Deliver by the stairs while the soup is still at least 60°C."),
+        new("elevator_clean", "电梯不洒", "Clean elevator", "Ride the elevator and finish with under 1% spilled."),
+        new("rain_dry", "雨天不洒", "Dry rain", "Finish under 1% spilled after a rain gust."),
+        new("pain_hot", "一单多灾", "Hot despite it", "Deliver hot after at least three pain events."),
     };
 
     private readonly HashSet<string> _unlocked = new();

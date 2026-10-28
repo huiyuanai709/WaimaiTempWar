@@ -21,7 +21,10 @@ public partial class BikeController : RigidBody3D
     private EventDirector? _events;
     private CargoRig? _cargo;
 
+    private PhaseEvents? _pain;
+
     public bool Autopilot { get; set; }
+    public bool Mounted { get; private set; }
     public float ForwardSpeed { get; private set; }
     public float Steer => _steer;
     public float Throttle => _throttle;
@@ -53,12 +56,60 @@ public partial class BikeController : RigidBody3D
         GlobalPosition = new Vector3(Track.LaneX, 0.02f, Track.StartZ);
         GlobalRotation = Vector3.Zero;
         BuildBody();
+        Mounted = false;
+        Freeze = true;
+    }
+
+    public void WakeForRide(bool autopilot)
+    {
+        Mounted = true;
+        Freeze = false;
+        Sleeping = false;
+        Autopilot = autopilot;
+    }
+
+    public void Park()
+    {
+        Autopilot = false;
+        Mounted = false;
+        LinearVelocity = Vector3.Zero;
+        AngularVelocity = Vector3.Zero;
+        ForwardSpeed = 0f;
+        Freeze = true;
     }
 
     public override void _PhysicsProcess(double delta)
     {
         _events ??= GetTree().GetFirstNodeInGroup("events") as EventDirector;
         _cargo ??= GetTree().GetFirstNodeInGroup("cargo") as CargoRig;
+        _pain ??= GetTree().GetFirstNodeInGroup("pain") as PhaseEvents;
+        if (!Mounted)
+        {
+            return;
+        }
+
+        float kick = _pain?.ConsumeImpulse() ?? 0f;
+        if (Mathf.Abs(kick) > 0.1f)
+        {
+            ApplyCentralImpulse(GlobalTransform.Basis.X * kick);
+        }
+
+        if (_pain?.ConsumeLid() == true)
+        {
+            _cargo?.NudgeLid(2.2f);
+        }
+
+        if (_pain?.ConsumeFood() == true)
+        {
+            _cargo?.NudgeContents(0.45f);
+        }
+
+        float spill = _pain?.ConsumeSpill() ?? 0f;
+        if (spill > 0f)
+        {
+            _cargo?.AddSpill(spill);
+        }
+
         bool locked = _events != null && _events.ControlsLocked;
         if (Autopilot)
         {
@@ -135,9 +186,10 @@ public partial class BikeController : RigidBody3D
                 velocity += away * 2.4f;
             }
         }
-        if (ForwardSpeed > MaxSpeed)
+        float cap = MaxSpeed * Mathf.Clamp(_pain?.BikeScale ?? 1f, 0.45f, 1f);
+        if (ForwardSpeed > cap)
         {
-            velocity -= forward * (ForwardSpeed - MaxSpeed);
+            velocity -= forward * (ForwardSpeed - cap);
         }
 
         velocity.Y = Mathf.Clamp(velocity.Y, -8f, 3.5f);
@@ -155,16 +207,16 @@ public partial class BikeController : RigidBody3D
         {
             drive = -7f;
         }
-        else if (_throttle > 0f && ForwardSpeed < MaxSpeed)
+        else if (_throttle > 0f && ForwardSpeed < cap)
         {
-            drive = 14f * _throttle;
+            drive = 14f * _throttle * Mathf.Clamp(_pain?.BikeScale ?? 1f, 0.45f, 1f);
         }
 
         velocity += forward * drive * step;
         ForwardSpeed = velocity.Dot(forward);
-        if (ForwardSpeed > MaxSpeed)
+        if (ForwardSpeed > cap)
         {
-            velocity -= forward * (ForwardSpeed - MaxSpeed);
+            velocity -= forward * (ForwardSpeed - cap);
         }
 
         state.LinearVelocity = velocity;

@@ -83,13 +83,40 @@ public partial class Hud : CanvasLayer
         _fill.AnchorRight = Mathf.Clamp(celsius / 100f, 0.02f, 1f);
         _fill.Color = _temp.Modulate;
 
+        var courier = GetNodeOrNull<Courier>("../Courier");
+        var shop = GetNodeOrNull<PickupShop>("../Shop");
+        var building = GetNodeOrNull<BuildingInterior>("../Building");
+        var pain = GetNodeOrNull<PhaseEvents>("../Events/Pain");
         float spill = _cargo.Spill01 * 100f;
         float crush = _cargo.Crush01 * 100f;
-        float speed = Mathf.Abs(_bike.ForwardSpeed) * 3.6f;
+        float speed = courier != null && courier.OnFoot
+            ? courier.PlanarSpeed * 3.6f
+            : Mathf.Abs(_bike.ForwardSpeed) * 3.6f;
         float eta = Eta();
         string lid = _cargo.LidOpen01 > 0.25f ? "    盖子开着  Press F" : "";
-        _stats.Text = $"洒出 {spill:0}%    压损 {crush:0}%    预计 {eta:0}s    {speed:0} km/h{lid}";
-        _route.Text = $"订单  热汤面 Hot noodle soup    目标 ≥ {Track.TargetCelsius:0}°C\n{_events.ArmedLine}";
+        string stamina = _game.Phase == DeliveryGame.RunPhase.Indoors && building != null && building.Stairs
+            ? $"    体力 {courier?.Stamina * 100f:0}%"
+            : "";
+        _stats.Text = $"洒出 {spill:0}%    压损 {crush:0}%    预计 {eta:0}s    {speed:0} km/h{lid}{stamina}";
+        if (_game.Phase == DeliveryGame.RunPhase.Pickup && shop != null)
+        {
+            _route.Text = shop.Status;
+        }
+        else if (_game.Phase == DeliveryGame.RunPhase.Indoors && building != null)
+        {
+            _route.Text = building.Status + "\n" + _events.ArmedLine;
+        }
+        else
+        {
+            _route.Text = $"订单  热汤面 Hot noodle soup    目标 ≥ {Track.TargetCelsius:0}°C\n{_events.ArmedLine}";
+        }
+
+        _hint.Text = _game.Phase switch
+        {
+            DeliveryGame.RunPhase.Pickup => "W A S D 走动    E 取餐 / 上车    Tab 成就    R 重开",
+            DeliveryGame.RunPhase.Indoors => "W A S D 走动    E 电梯 / 送达    楼梯会耗体力",
+            _ => "W 油门    S / Space 刹车    A D 转向    F 拍盖    Tab 成就    R 重开",
+        };
 
         string banner = _events.Banner;
         if (string.IsNullOrEmpty(banner) && _game.Phase == DeliveryGame.RunPhase.Ride)
@@ -116,6 +143,11 @@ public partial class Hud : CanvasLayer
             _toastTime -= dt;
             _toast.Text = _toastText;
             _toast.Modulate = new Color(1f, 1f, 1f, Mathf.Clamp(_toastTime, 0f, 1f));
+        }
+        else if (pain != null && pain.ToastLeft > 0f)
+        {
+            _toast.Text = pain.Toast;
+            _toast.Modulate = Colors.White;
         }
         else
         {

@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/DeliveryGame.cs" id="1_game"]
 [ext_resource type="Script" path="res://scripts/ChaseCamera.cs" id="2_cam"]
@@ -9,6 +9,9 @@
 [ext_resource type="Script" path="res://scripts/EventDirector.cs" id="7_evt"]
 [ext_resource type="Script" path="res://scripts/Achievements.cs" id="8_ach"]
 [ext_resource type="Script" path="res://scripts/Hud.cs" id="9_hud"]
+[ext_resource type="Script" path="res://scripts/Courier.cs" id="10_courier"]
+[ext_resource type="Script" path="res://scripts/PickupShop.cs" id="11_shop"]
+[ext_resource type="Script" path="res://scripts/BuildingInterior.cs" id="12_bldg"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_game")
@@ -48,6 +51,15 @@ script = ExtResource("7_evt")
 
 [node name="Achievements" type="Node" parent="."]
 script = ExtResource("8_ach")
+
+[node name="Courier" type="CharacterBody3D" parent="."]
+script = ExtResource("10_courier")
+
+[node name="Shop" type="Node3D" parent="."]
+script = ExtResource("11_shop")
+
+[node name="Building" type="Node3D" parent="."]
+script = ExtResource("12_bldg")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("9_hud")
